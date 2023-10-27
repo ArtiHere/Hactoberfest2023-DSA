@@ -1,0 +1,102 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+using namespace std;
+
+const int MAXN = 100005; // Maximum number of nodes in the tree
+const int LOG2_MAXN = 20; // Log base 2 of MAXN, adjust if needed
+
+vector<int> tree[MAXN]; // Adjacency list representing the tree
+int depth[MAXN]; // Depth of each node in the tree
+int parent[MAXN][LOG2_MAXN]; // Binary lifting table
+
+// Perform a depth-first traversal to compute depths and parents
+void dfs(int u, int p) {
+    depth[u] = depth[p] + 1;
+    parent[u][0] = p;
+    
+    for (int i = 1; i < LOG2_MAXN; i++) {
+        if (parent[u][i - 1] != -1) {
+            parent[u][i] = parent[parent[u][i - 1]][i - 1];
+        } else {
+            parent[u][i] = -1;
+        }
+    }
+    
+    for (int v : tree[u]) {
+        if (v != p) {
+            dfs(v, u);
+        }
+    }
+}
+
+// Find the LCA of two nodes
+int findLCA(int u, int v) {
+    if (depth[u] < depth[v]) {
+        swap(u, v);
+    }
+    
+    // Bring u to the same depth as v
+    for (int i = LOG2_MAXN - 1; i >= 0; i--) {
+        if (depth[u] - (1 << i) >= depth[v]) {
+            u = parent[u][i];
+        }
+    }
+    
+    if (u == v) {
+        return u;
+    }
+    
+    // Move both nodes up until they have the same parent
+    for (int i = LOG2_MAXN - 1; i >= 0; i--) {
+        if (parent[u][i] != parent[v][i]) {
+            u = parent[u][i];
+            v = parent[v][i];
+        }
+    }
+    
+    return parent[u][0];
+}
+
+int main() {
+    int n; // Number of nodes in the tree
+    cin >> n;
+    
+    // Initialize the tree
+    for (int i = 1; i <= n; i++) {
+        tree[i].clear();
+    }
+    
+    // Read the tree edges
+    for (int i = 1; i < n; i++) {
+        int u, v;
+        cin >> u >> v;
+        tree[u].push_back(v);
+        tree[v].push_back(u);
+    }
+    
+    // Initialize depth and parent arrays
+    depth[0] = -1; // Depth of the root
+    for (int i = 1; i <= n; i++) {
+        for (int j = 0; j < LOG2_MAXN; j++) {
+            parent[i][j] = -1;
+        }
+    }
+    
+    // Perform depth-first traversal to compute depths and parents
+    dfs(1, 0); // Assuming root is at node 1
+    
+    int q; // Number of queries
+    cin >> q;
+    
+    while (q--) {
+        int u, v; // Nodes for which LCA is to be found
+        cin >> u >> v;
+        
+        int lca = findLCA(u, v);
+        cout << "LCA of " << u << " and " << v << " is: " << lca << endl;
+    }
+    
+    return 0;
+}
